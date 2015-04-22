@@ -3,6 +3,7 @@ package org.chrisjr.susurrantutils
 import ch.systemsx.cisd.hdf5._
 import scala.collection.immutable.PagedSeq
 import scala.collection.JavaConversions._
+import de.lmu.ifi.dbs.elki.data.FloatVector
 
 object Hdf5 {
   val validDataTypes = Set("gfccs", "beat_coefs", "chroma")
@@ -44,6 +45,15 @@ object Hdf5 {
     val writer = hdf5Writer(outFile)
     writer.writeLongMatrix("/lengths", allLengths)
     writer.close()
+  }
+  
+  def readH5dset(h5file: String, dataset: String = "/X"): java.util.List[FloatVector] = {
+    val reader = hdf5Reader(h5file)
+    val dim = reader.`object`().getDimensions(dataset)(1).toInt
+    val vecs = for {
+        ary <- new Hdf5FloatIterator(reader, dataset)
+      } yield new FloatVector(ary)
+    vecs.toList
   }
 
   def randomHdf5(rows: Int = 1000, cols: Int = 10,

@@ -3,4 +3,4 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd $DIR
 args="$@"
-sbt "run $args"
+sbt -mem 4096 "run $args"

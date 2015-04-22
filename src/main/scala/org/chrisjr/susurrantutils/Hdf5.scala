@@ -24,9 +24,13 @@ object Hdf5 {
   }
   def mapTracks[T](reader: IHDF5Reader, f: (IHDF5Reader, String) => T): Iterator[T] = {
     val objInfo = reader.`object`()
+    val allTracks = objInfo.getGroupMembers("/")
+    val total = allTracks.length
+    val printEvery = total / 20
     for {
-      (track, i) <- objInfo.getGroupMembers("/").iterator().zipWithIndex
-      _ = if (i % 10 == 0) { println(i) }
+      (track, i) <- allTracks.iterator().zipWithIndex
+      progress = (i * 100.0) / total
+      _ = if (i % printEvery == 0) { println(s"${progress}%") }
       dtypes = objInfo.getGroupMembers(s"/${track}").toSet
       if dtypes == validDataTypes
     } yield f(reader, track)

@@ -55,6 +55,7 @@ public class Hdf5DatabaseConnection extends AbstractDatabaseConnection {
 				infile = inputParam.getValue();
 			}
 			super.makeOptions(config);
+			configFilters(config);
 		}
 
 		@Override

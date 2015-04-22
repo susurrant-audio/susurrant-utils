@@ -45,4 +45,17 @@ object Hdf5 {
     writer.writeLongMatrix("/lengths", allLengths)
     writer.close()
   }
+
+  def randomHdf5(rows: Int = 1000, cols: Int = 10,
+                 group: String = "/groupA/", dataset: String = "a"): (String, Array[Array[Float]]) = {
+    val f = mkTemp()
+    val xs = Array.fill(rows, 10) { scala.util.Random.nextFloat }
+    val writer = Hdf5.hdf5Writer(f)
+    if (group != "/") {
+      writer.`object`().createGroup(group)
+    }
+    writer.writeFloatMatrix(group ++ dataset, xs)
+    writer.close()
+    (f, xs)
+  }
 }

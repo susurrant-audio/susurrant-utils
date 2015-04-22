@@ -131,9 +131,10 @@ object SusurrantUtils {
 
   sealed trait Mode
   case object TokensToVW extends Mode
+  case object ElkiPrep extends Mode
 
-  case class Config(mode: Mode = TokensToVW, tokensIn: File = new File("."),
-      vwOut: File = new File("."))
+  case class Config(mode: Mode = TokensToVW, in: File = new File("."),
+      out: File = new File("."))
 
   val parser = new scopt.OptionParser[Config]("susurrant") {
     head("susurrant", "0.0.1")
@@ -141,10 +142,19 @@ object SusurrantUtils {
       c.copy(mode = TokensToVW)
     } text ("convert tokens to vw format") children(
       opt[File]('i', "tokens-in") required() valueName("<file>") action { (x, c) =>
-        c.copy(tokensIn = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
         text("tokensIn is an H5 file with token data"),
       opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
-        c.copy(vwOut = x) } text("out will be filled with VW data")
+        c.copy(out = x) } text("out will be filled with VW data")
+    )
+    cmd("elki_prep") action { (_, c) =>
+      c.copy(mode = ElkiPrep)
+    } text ("convert vectors to Elki format") children(
+      opt[File]('i', "in") required() valueName("<file>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("in is an H5 file with vectors in '/X' dataset"),
+      opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
+        c.copy(out = x) } text("outfile will be filled with ELKI bundles")
     )
     help("help") text ("prints this usage text")
   }
@@ -153,7 +163,9 @@ object SusurrantUtils {
     parser.parse(args, Config()).fold() { conf =>
       conf.mode match {
         case TokensToVW =>
-          MalletUtil.toVW(conf.tokensIn.toString, conf.vwOut.toString)
+          MalletUtil.toVW(conf.in.toString, conf.out.toString)
+        case ElkiPrep =>
+          Elki.hdf5ToBundle(conf.in.toString, conf.out.toString)
       }
     }
     //    MalletUtil.train()

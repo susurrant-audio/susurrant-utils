@@ -9,6 +9,7 @@ import de.lmu.ifi.dbs.elki.datasource.AbstractDatabaseConnection;
 import de.lmu.ifi.dbs.elki.datasource.bundle.MultipleObjectsBundle;
 import de.lmu.ifi.dbs.elki.datasource.filter.ObjectFilter;
 import de.lmu.ifi.dbs.elki.logging.Logging;
+import de.lmu.ifi.dbs.elki.logging.statistics.Duration;
 import de.lmu.ifi.dbs.elki.utilities.optionhandling.OptionID;
 import de.lmu.ifi.dbs.elki.utilities.optionhandling.parameterization.Parameterization;
 import de.lmu.ifi.dbs.elki.utilities.optionhandling.parameters.FileParameter;
@@ -27,12 +28,31 @@ public class Hdf5DatabaseConnection extends AbstractDatabaseConnection {
 	@Override
 	public MultipleObjectsBundle loadData() {
 		String h5file = inFile.getPath();
+
+		Duration duration = LOG.isStatistics() ? LOG.newDuration(
+				this.getClass().getName() + ".parse").begin() : null;
+
 		List<FloatVector> vecs = Hdf5.readH5dset(h5file, "/X");
 		int dim = vecs.get(0).getDimensionality();
 		VectorFieldTypeInformation<FloatVector> type = new VectorFieldTypeInformation<>(
 				FloatVector.FACTORY, dim);
 
-		return MultipleObjectsBundle.makeSimple(type, vecs);
+		MultipleObjectsBundle parsed = MultipleObjectsBundle.makeSimple(type,
+				vecs);
+		if (duration != null) {
+			LOG.statistics(duration.end());
+		}
+
+		Duration fduration = LOG.isStatistics() ? LOG.newDuration(
+				this.getClass().getName() + ".filter").begin() : null;
+
+		MultipleObjectsBundle objects = invokeBundleFilters(parsed);
+
+		if (fduration != null) {
+			LOG.statistics(fduration.end());
+		}
+
+		return objects;
 	}
 
 	@Override

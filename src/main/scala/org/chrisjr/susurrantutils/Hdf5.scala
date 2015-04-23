@@ -54,10 +54,10 @@ object Hdf5 {
   def readH5dset(h5file: String, dataset: String = "/X"): java.util.List[FloatVector] = {
     val reader = hdf5Reader(h5file)
     val dim = reader.`object`().getDimensions(dataset)(1).toInt
-    val vecs = for {
+    val vecs = (for {
         ary <- new Hdf5FloatIterator(reader, dataset)
-      } yield new FloatVector(ary)
-    vecs.toList
+      } yield new FloatVector(ary)).toArray
+    java.util.Arrays.asList(vecs:_*)
   }
 
   def randomHdf5(rows: Int = 1000, cols: Int = 10,

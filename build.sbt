@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   ),
   "cc.mallet" % "mallet" % "2.0.7",
   "com.lambdaworks" %% "jacks" % "2.3.3",
+  "com.typesafe.play" %% "play-json" % "2.3.1",
   "com.github.scopt" %% "scopt" % "3.3.0",
   "org.scalaz" %% "scalaz-core" % "7.1.1",
   "org.apache.spark" %% "spark-core" % "1.2.1"  % "provided",

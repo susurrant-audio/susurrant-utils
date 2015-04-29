@@ -2,7 +2,10 @@ package org.chrisjr.susurrantutils
 
 import ch.systemsx.cisd.hdf5.IHDF5Reader
 import com.lambdaworks.jacks.JacksMapper
+import play.api.libs.json.Json
 import java.io._
+import scala.io.Source
+import scala.collection.JavaConversions._
 
 object Tokens {
   type Token = (Option[Int], Int, Int)
@@ -54,5 +57,33 @@ object Tokens {
         new File(outDir, s"$track.json"))
       JacksMapper.writeValue(out, allTokens.toSeq)
     }
+  }
+  
+  case class Comment(body: String, username: String, user_url: String,
+      track_id: Int, link: String, segment: String)
+
+  class CommentReader(inFile: File) {
+    implicit val commentFmt = Json.format[Comment]
+    val data = {
+      val source = Source.fromFile(inFile)
+      val input = source.getLines.mkString("\n")
+      val json = Json.parse(input)
+      json.as[Map[String, Seq[Comment]]]
+    }
+    
+    def getSegments: Seq[String] = data.keys.toSeq
+
+    def getCommentsFor(segment: String): Map[String, Int] = {
+      import scalaz._
+      import Scalaz._
+
+      val comments = data.getOrElse(segment, Seq())
+      val tokens = comments.flatMap(_.body.toLowerCase.split(" "))
+      tokens.map(x => Map(x -> 1)).reduce(_ |+| _)
+    }
+  }
+  
+  def commentReader(commentFile: String): CommentReader = {
+    new CommentReader(new File(commentFile))
   }
 }

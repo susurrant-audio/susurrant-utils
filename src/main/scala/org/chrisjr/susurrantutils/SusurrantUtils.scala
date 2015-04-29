@@ -134,6 +134,7 @@ object SusurrantUtils {
   case object ElkiPrep extends Mode
 
   case class Config(mode: Mode = TokensToVW, in: File = new File("."),
+      text: File = new File("."),
       out: File = new File("."))
 
   val parser = new scopt.OptionParser[Config]("susurrant") {
@@ -143,7 +144,10 @@ object SusurrantUtils {
     } text ("convert tokens to vw format") children(
       opt[File]('i', "tokens-in") required() valueName("<file>") action { (x, c) =>
         c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
-        text("tokensIn is an H5 file with token data"),
+        text("tokens-in is an H5 file with token data"),
+      opt[File]('t', "text-in") required() valueName("<file>") action { (x, c) =>
+        c.copy(text = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("text-in is a JSON file with comment data"),
       opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
         c.copy(out = x) } text("out will be filled with VW data")
     )
@@ -163,7 +167,7 @@ object SusurrantUtils {
     parser.parse(args, Config()).fold() { conf =>
       conf.mode match {
         case TokensToVW =>
-          MalletUtil.toVW(conf.in.toString, conf.out.toString)
+          MalletUtil.toVW(conf.in.toString, conf.text.toString, conf.out.toString)
         case ElkiPrep =>
           Elki.hdf5ToBundle(conf.in.toString, conf.out.toString)
       }

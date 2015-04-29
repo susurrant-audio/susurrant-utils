@@ -66,9 +66,11 @@ object MalletUtil {
     writeVW(vw, it)
   }
 
-  def toVW(h5file: String, vw: String): Unit = {
+  def toVW(h5file: String, commentJson: String, vw: String): Unit = {
     import scalaz._
     import Scalaz._
+    
+    val commentReader = Tokens.commentReader(commentJson)
 
     val reader = Hdf5.hdf5Reader(h5file)
     val instanceIterator = Hdf5.mapTracks(reader, { (reader, track) =>
@@ -77,7 +79,8 @@ object MalletUtil {
         data = reader.readIntArray(s"/${track}/${dtype}");
         datum <- data
       } yield Map(s"${dtype}${datum}" -> 1))
-      val counts = trackData.reduce(_ |+| _)
+      val commentData = commentReader.getCommentsFor(track)
+      val counts = trackData.reduce(_ |+| _) ++ commentData
       (track, counts)
     })
 

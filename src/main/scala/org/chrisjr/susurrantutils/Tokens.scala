@@ -80,7 +80,7 @@ object Tokens {
       val comments = data.getOrElse(segment, Seq())
       val tokens = for {
         comment <- comments
-        token <- comment.body.toLowerCase.split(" ")
+        token <- comment.body.toLowerCase.filter(Character.isLetter).split(" ")
       } yield Map(token -> 1)
       if (tokens.length > 0) tokens.reduce(_ |+| _) else Map()
     }

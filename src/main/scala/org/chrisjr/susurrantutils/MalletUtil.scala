@@ -80,7 +80,7 @@ object MalletUtil {
         datum <- data
       } yield Map(s"${dtype}${datum}" -> 1))
       val commentData = commentReader.getCommentsFor(track)
-      val counts = trackData.reduce(_ |+| _) ++ commentData
+      val counts = (trackData.reduce(_ |+| _)) |+| commentData
       (track, counts)
     })
 

@@ -81,6 +81,7 @@ object Tokens {
       val tokens = for {
         comment <- comments
         token <- comment.body.toLowerCase.filter(Character.isLetter).split(" ")
+        if token.length > 3
       } yield Map(token -> 1)
       if (tokens.length > 0) tokens.reduce(_ |+| _) else Map()
     }

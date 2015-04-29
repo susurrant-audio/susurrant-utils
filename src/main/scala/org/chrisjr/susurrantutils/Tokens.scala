@@ -78,8 +78,11 @@ object Tokens {
       import Scalaz._
 
       val comments = data.getOrElse(segment, Seq())
-      val tokens = comments.flatMap(_.body.toLowerCase.split(" "))
-      tokens.map(x => Map(x -> 1)).reduce(_ |+| _)
+      val tokens = for {
+        comment <- comments
+        token <- comment.body.toLowerCase.split(" ")
+      } yield Map(token -> 1)
+      if (tokens.length > 0) tokens.reduce(_ |+| _) else Map()
     }
   }
   

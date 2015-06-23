@@ -9,7 +9,7 @@ import scala.collection.JavaConversions._
 
 object Tokens {
   type Token = (Option[Int], Int, Int)
-//  case class Token(beat_coef: Option[Int], chroma: Int, gfcc: Int)
+  //  case class Token(beat_coef: Option[Int], chroma: Int, gfcc: Int)
 
   def groupby[T](iter: Iterator[T])(startsGroup: T => Boolean): Iterator[Iterator[T]] =
     new Iterator[Iterator[T]] {
@@ -32,37 +32,32 @@ object Tokens {
 
   def saveTracks(tokenFile: String, outDir: String): Unit = {
     val reader = Hdf5.hdf5Reader(tokenFile)
-    val segIterator = Hdf5.mapTracks(reader, { (reader, track) =>
-      val segData = (for {
+    val trackIterator = Hdf5.mapTracks(reader, { (reader, track) =>
+      val trackData = (for {
         dtype <- Hdf5.validDataTypes;
         data = reader.readIntArray(s"/${track}/${dtype}")
       } yield (dtype, data)).toMap
-      (track, combineTokens(segData))
+      (track, combineTokens(trackData))
     })
-    val trackIterator = groupby(segIterator)(_._1.endsWith("0"))
 
-    for (group <- trackIterator) {
-      var trackName: Option[String] = None
-      var allTokens: Iterator[Token] = Iterator.empty
-      for ((seg, tokens) <- group) {
-        if (trackName.isEmpty) {
-          trackName = Some(seg.split('.')(0))
-        }
-        allTokens = allTokens ++ tokens.toIterator
-      }
-
-      val track = trackName.getOrElse(
-        throw new IllegalStateException("No track name found!"))
+    for ((track, tokens) <- trackIterator) {
+      val track_id = track.split('.')(0)
       val out = new FileOutputStream(
         new File(outDir, s"$track.json"))
-      JacksMapper.writeValue(out, allTokens.toSeq)
+      JacksMapper.writeValue(out, tokens.toSeq)
     }
-  }
-  
-  case class Comment(body: String, username: String, user_url: String,
-      track_id: Int, link: String, segment: String)
 
-  class CommentReader(inFile: File) {
+  }
+
+  case class Comment(body: String, username: String, user_url: String,
+                     track_id: Int, link: String, segment: String)
+
+  trait CommentExtractor {
+    def getSegments: Seq[String]
+    def getCommentsFor(segment: String): Map[String, Int]
+  }
+
+  class CommentReader(inFile: File) extends CommentExtractor {
     implicit val commentFmt = Json.format[Comment]
     val data = {
       val source = Source.fromFile(inFile)
@@ -70,7 +65,7 @@ object Tokens {
       val json = Json.parse(input)
       json.as[Map[String, Seq[Comment]]]
     }
-    
+
     def getSegments: Seq[String] = data.keys.toSeq
 
     def getCommentsFor(segment: String): Map[String, Int] = {
@@ -80,14 +75,19 @@ object Tokens {
       val comments = data.getOrElse(segment, Seq())
       val tokens = for {
         comment <- comments
-        token <- comment.body.toLowerCase.filter(Character.isLetter).split(" ")
-        if token.length > 3
-      } yield Map(token -> 1)
+        token <- comment.body.toLowerCase.split(" ")
+        token0 = token.filter(Character.isLetter)
+        if token0.length > 3
+      } yield Map(token0 -> 1)
       if (tokens.length > 0) tokens.reduce(_ |+| _) else Map()
     }
   }
-  
-  def commentReader(commentFile: String): CommentReader = {
+
+  def commentReader(commentFile: String): CommentExtractor = {
     new CommentReader(new File(commentFile))
+  }
+  object EmptyCommentReader extends CommentExtractor {
+    def getSegments = Seq()
+    def getCommentsFor(segment: String) = Map()
   }
 }

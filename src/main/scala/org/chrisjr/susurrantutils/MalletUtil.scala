@@ -16,8 +16,15 @@ object MalletUtil {
       (k, v) <- opts.toArray
     } yield Array(s"--$k", v)).flatten
 
-  def toInstances(h5file: String, instanceFile: String): Unit = {
+  def toInstances(h5file: String, commentJson: Option[String], instanceFile: String): Unit = {
+    import scalaz._
+    import Scalaz._
+
     val reader = Hdf5.hdf5Reader(h5file)
+    val commentReader: Tokens.CommentExtractor =
+      if (commentJson.nonEmpty) Tokens.commentReader(commentJson.get)
+      else Tokens.EmptyCommentReader
+
     val ts2fs = new TokenSequence2FeatureSequence()
     val instances = new InstanceList(ts2fs)
     val instanceIterator = Hdf5.mapTracks(reader, { (reader, track) =>
@@ -25,8 +32,14 @@ object MalletUtil {
         dtype <- Hdf5.validDataTypes.toArray;
         data = reader.readIntArray(s"/${track}/${dtype}");
         datum <- data
-      } yield new Token(s"${dtype}${datum}"));
-      val ts = new TokenSequence(trackData)
+      } yield Map(s"${dtype}${datum}" -> 1))
+      val commentData = commentReader.getCommentsFor(track)
+      val tokenData = (trackData.reduce(_ |+| _)) |+| commentData
+      val tokens = (for {
+        (word, count) <- tokenData
+        _ <- 1 to count
+      } yield new Token(word)) 
+      val ts = new TokenSequence(tokens)
       new Instance(ts, None, track, None)
     })
 
@@ -66,11 +79,13 @@ object MalletUtil {
     writeVW(vw, it)
   }
 
-  def toVW(h5file: String, commentJson: String, vw: String): Unit = {
+  def toVW(h5file: String, commentJson: Option[String], vw: String): Unit = {
     import scalaz._
     import Scalaz._
     
-    val commentReader = Tokens.commentReader(commentJson)
+    val commentReader: Tokens.CommentExtractor =
+      if (commentJson.nonEmpty) Tokens.commentReader(commentJson.get)
+      else Tokens.EmptyCommentReader
 
     val reader = Hdf5.hdf5Reader(h5file)
     val instanceIterator = Hdf5.mapTracks(reader, { (reader, track) =>

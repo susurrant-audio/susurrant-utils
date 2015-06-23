@@ -130,11 +130,13 @@ object SusurrantUtils {
   import scopt._
 
   sealed trait Mode
+  case object TokensToMallet extends Mode
   case object TokensToVW extends Mode
   case object ElkiPrep extends Mode
+  case object Tracks extends Mode
 
   case class Config(mode: Mode = TokensToVW, in: File = new File("."),
-      text: File = new File("."),
+      text: Option[File] = None,
       out: File = new File("."))
 
   val parser = new scopt.OptionParser[Config]("susurrant") {
@@ -145,11 +147,23 @@ object SusurrantUtils {
       opt[File]('i', "tokens-in") required() valueName("<file>") action { (x, c) =>
         c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
         text("tokens-in is an H5 file with token data"),
-      opt[File]('t', "text-in") required() valueName("<file>") action { (x, c) =>
-        c.copy(text = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
-        text("text-in is a JSON file with comment data"),
+      opt[File]('t', "text-in") valueName("<file>") action { (x, c) =>
+        c.copy(text = Some(x)) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("text-in is an (optional) JSON file with comment data"),
       opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
         c.copy(out = x) } text("out will be filled with VW data")
+    )
+    cmd("to_mallet") action { (_, c) =>
+      c.copy(mode = TokensToMallet)
+    } text ("convert tokens to Mallet format") children(
+      opt[File]('i', "tokens-in") required() valueName("<file>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("tokens-in is an H5 file with token data"),
+      opt[File]('t', "text-in") valueName("<file>") action { (x, c) =>
+        c.copy(text = Some(x)) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("text-in is an (optional) JSON file with comment data"),
+      opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
+        c.copy(out = x) } text("out will be filled with Mallet data")
     )
     cmd("elki_prep") action { (_, c) =>
       c.copy(mode = ElkiPrep)
@@ -160,16 +174,29 @@ object SusurrantUtils {
       opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
         c.copy(out = x) } text("outfile will be filled with ELKI bundles")
     )
+    cmd("tracks") action { (_, c) =>
+      c.copy(mode = Tracks)
+    } text ("convert token file to track JSON") children(
+      opt[File]('i', "in") required() valueName("<file>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("in is an H5 file with vectors in '/X' dataset"),
+      opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
+        c.copy(out = x) } text("outdir will be filled with track json")
+    )
     help("help") text ("prints this usage text")
   }
 
   def main(args: Array[String]) {
     parser.parse(args, Config()).fold() { conf =>
       conf.mode match {
+        case TokensToMallet =>
+          MalletUtil.toInstances(conf.in.toString, conf.text.map(_.toString), conf.out.toString)
         case TokensToVW =>
-          MalletUtil.toVW(conf.in.toString, conf.text.toString, conf.out.toString)
+          MalletUtil.toVW(conf.in.toString, conf.text.map(_.toString), conf.out.toString)
         case ElkiPrep =>
           Elki.hdf5ToBundle(conf.in.toString, conf.out.toString)
+        case Tracks =>
+          Tokens.saveTracks(conf.in.toString, conf.out.toString)
       }
     }
     //    MalletUtil.train()

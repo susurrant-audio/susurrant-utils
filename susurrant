@@ -1,6 +1,5 @@
 #!/bin/sh
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-cd $DIR
+cd "`dirname \"$0\"`"
 args="$@"
 sbt -mem 4096 "run $args"

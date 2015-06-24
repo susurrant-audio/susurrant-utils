@@ -48,6 +48,18 @@ object MalletUtil {
     instances.save(new java.io.File(instanceFile))
   }
 
+  def writeMalletText(txtFile: String, instances: Iterable[(String, Map[String, Int])]): Unit = {
+    val writer = Print(txtFile)
+    val label = "0"
+    for ((name, counts) <- instances) {
+      val wordCounts = counts.flatMap { case (word, count) => Seq.fill(count)(s"$word") }
+      writer.print(s"$name\t$label\t")
+      writer.print(wordCounts.mkString(" "))
+      writer.println()
+    }
+    writer.close()
+  }
+
   def writeVW(vw: String, instances: Iterable[(String, Map[String, Int])]): Unit = {
     val writer = Print(vw)
     for ((name, counts) <- instances) {
@@ -79,7 +91,7 @@ object MalletUtil {
     writeVW(vw, it)
   }
 
-  def toVW(h5file: String, commentJson: Option[String], vw: String): Unit = {
+  def toInstanceIterator(h5file: String, commentJson: Option[String]): Iterator[(String, Map[String, Int])] = {
     import scalaz._
     import Scalaz._
     
@@ -98,9 +110,21 @@ object MalletUtil {
       val counts = (trackData.reduce(_ |+| _)) |+| commentData
       (track, counts)
     })
+    instanceIterator
+  }
+
+  def toVW(h5file: String, commentJson: Option[String], vw: String): Unit = {
+    val instanceIterator = toInstanceIterator(h5file, commentJson)
 
     writeVW(vw, instanceIterator.toIterable)
   }
+
+  def toMalletText(h5file: String, commentJson: Option[String], txtFile: String): Unit = {
+    val instanceIterator = toInstanceIterator(h5file, commentJson)
+
+    writeMalletText(txtFile, instanceIterator.toIterable)
+  }
+  
   def defaultOpts(malletDir: File, topics: Int = 100) = Map(
     "input" -> new File(malletDir, "instances.mallet").toString(),
     "num-topics" -> topics.toString,

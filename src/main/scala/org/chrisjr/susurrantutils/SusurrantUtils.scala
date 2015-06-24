@@ -131,6 +131,7 @@ object SusurrantUtils {
 
   sealed trait Mode
   case object TokensToMallet extends Mode
+  case object TokensToMalletText extends Mode
   case object TokensToVW extends Mode
   case object ElkiPrep extends Mode
   case object Tracks extends Mode
@@ -153,6 +154,19 @@ object SusurrantUtils {
       opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
         c.copy(out = x) } text("out will be filled with VW data")
     )
+    cmd("to_mallet_text") action { (_, c) =>
+      c.copy(mode = TokensToMalletText)
+    } text ("convert tokens to Mallet text format") children(
+      opt[File]('i', "tokens-in") required() valueName("<file>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("tokens-in is an H5 file with token data"),
+      opt[File]('t', "text-in") valueName("<file>") action { (x, c) =>
+        c.copy(text = Some(x)) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("text-in is an (optional) JSON file with comment data"),
+      opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
+        c.copy(out = x) } text("out will be filled with Mallet text data")
+    )
+
     cmd("to_mallet") action { (_, c) =>
       c.copy(mode = TokensToMallet)
     } text ("convert tokens to Mallet format") children(
@@ -189,6 +203,8 @@ object SusurrantUtils {
   def main(args: Array[String]) {
     parser.parse(args, Config()).fold() { conf =>
       conf.mode match {
+        case TokensToMalletText =>
+          MalletUtil.toMalletText(conf.in.toString, conf.text.map(_.toString), conf.out.toString)
         case TokensToMallet =>
           MalletUtil.toInstances(conf.in.toString, conf.text.map(_.toString), conf.out.toString)
         case TokensToVW =>

@@ -130,6 +130,7 @@ object SusurrantUtils {
   import scopt._
 
   sealed trait Mode
+  case object MalletLDA extends Mode
   case object TokensToMallet extends Mode
   case object TokensToMalletText extends Mode
   case object TokensToVW extends Mode
@@ -138,7 +139,8 @@ object SusurrantUtils {
 
   case class Config(mode: Mode = TokensToVW, in: File = new File("."),
       text: Option[File] = None,
-      out: File = new File("."))
+      out: File = new File("."),
+      topics: Int = -1)
 
   val parser = new scopt.OptionParser[Config]("susurrant") {
     head("susurrant", "0.0.1")
@@ -165,6 +167,15 @@ object SusurrantUtils {
         text("text-in is an (optional) JSON file with comment data"),
       opt[File]('o', "out") required() valueName("<file>") action { (x, c) =>
         c.copy(out = x) } text("out will be filled with Mallet text data")
+    )
+    cmd("train_mallet") action { (_, c) =>
+      c.copy(mode = MalletLDA)
+    } text ("train LDA with Mallet") children(
+      opt[File]('i', "input") required() valueName("<file>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("tokens-in is an H5 file with token data"),
+      opt[Int]('t', "topics") valueName("[topics]") action { (x, c) =>
+        c.copy(topics = x) } text("number of topics to train")
     )
 
     cmd("to_mallet") action { (_, c) =>
@@ -203,6 +214,8 @@ object SusurrantUtils {
   def main(args: Array[String]) {
     parser.parse(args, Config()).fold() { conf =>
       conf.mode match {
+        case MalletLDA =>
+          MalletUtil.train(Some(conf.out), Some(Map("num-topics" -> conf.topics.toString)))
         case TokensToMalletText =>
           MalletUtil.toMalletText(conf.in.toString, conf.text.map(_.toString), conf.out.toString)
         case TokensToMallet =>

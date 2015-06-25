@@ -142,8 +142,10 @@ object MalletUtil {
     "diagnostics-file" -> new File(malletDir, "diagnostics-file.txt").toString,
     "xml-topic-phrase-report" -> new File(malletDir, "topic-phrases.xml").toString)
 
-  def train(maybeOpts: Option[LdaOpts] = None): Unit = {
-    val opts = maybeOpts.getOrElse(defaultOpts(new File("../lda")))
+  def train(inputDirMaybe: Option[File] = None, maybeOpts: Option[LdaOpts] = None): Unit = {
+    val inputDir = inputDirMaybe.getOrElse(new File("../mallet"))
+    val defaults = defaultOpts(inputDir)
+    val opts = defaults ++ maybeOpts.getOrElse(Map())
     TopicTrainer.main(toArgs(opts))
   }
 }

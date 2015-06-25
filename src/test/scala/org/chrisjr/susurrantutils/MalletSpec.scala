@@ -11,7 +11,7 @@ object MalletSpec {
     tokensForType = Array.fill(tokens) { scala.util.Random.nextInt(1000) }
   } yield dtype -> tokensForType).toMap
 
-  def randomTracks(tracksN: Int = 200, tokens: Int = 500): (String, Map[String, Map[String, Array[Int]]]) = {
+  def randomTracks(tracksN: Int = 200, tokens: Int = 1000): (String, Map[String, Map[String, Array[Int]]]) = {
     val f = mkTemp()
     val writer = Hdf5.hdf5Writer(f)
     val xs = (for {
@@ -69,8 +69,6 @@ class MalletSpec extends FunSpec with ShouldMatchers {
         }
         tokenCounts shouldEqual dtypeTokens
       }
-//      instanceValues shouldBe tokens
     }
-
   }
 }

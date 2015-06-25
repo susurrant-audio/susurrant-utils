@@ -2,4 +2,4 @@
 
 cd "`dirname \"$0\"`"
 args="$@"
-sbt -mem 4096 "run $args"
+sbt -mem 8000 "run $args"

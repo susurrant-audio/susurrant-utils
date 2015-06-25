@@ -171,8 +171,8 @@ object SusurrantUtils {
     cmd("train_mallet") action { (_, c) =>
       c.copy(mode = MalletLDA)
     } text ("train LDA with Mallet") children(
-      opt[File]('i', "input") required() valueName("<file>") action { (x, c) =>
-        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+      opt[File]('i', "input") required() valueName("<dir>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isDirectory()) success else failure("Input must be directory containing instances.mallet") }
         text("tokens-in is an H5 file with token data"),
       opt[Int]('t', "topics") valueName("[topics]") action { (x, c) =>
         c.copy(topics = x) } text("number of topics to train")

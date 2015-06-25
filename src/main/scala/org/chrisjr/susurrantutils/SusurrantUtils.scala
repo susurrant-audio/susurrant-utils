@@ -131,6 +131,7 @@ object SusurrantUtils {
 
   sealed trait Mode
   case object MalletLDA extends Mode
+  case object MalletPrune extends Mode
   case object TokensToMallet extends Mode
   case object TokensToMalletText extends Mode
   case object TokensToVW extends Mode
@@ -140,7 +141,9 @@ object SusurrantUtils {
   case class Config(mode: Mode = TokensToVW, in: File = new File("."),
       text: Option[File] = None,
       out: File = new File("."),
-      topics: Int = -1)
+      topics: Option[Int] = None,
+      minDocFreq: Option[Int] = None,
+      numberOfWords: Option[Int] = None)
 
   val parser = new scopt.OptionParser[Config]("susurrant") {
     head("susurrant", "0.0.1")
@@ -171,11 +174,23 @@ object SusurrantUtils {
     cmd("train_mallet") action { (_, c) =>
       c.copy(mode = MalletLDA)
     } text ("train LDA with Mallet") children(
-      opt[File]('i', "input") required() valueName("<dir>") action { (x, c) =>
-        c.copy(in = x) } validate { x => if (x.exists() && x.isDirectory()) success else failure("Input must be directory containing instances.mallet") }
-        text("tokens-in is an H5 file with token data"),
+      opt[File]('i', "input") required() valueName("<file>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("a Mallet instances file"),
       opt[Int]('t', "topics") valueName("[topics]") action { (x, c) =>
-        c.copy(topics = x) } text("number of topics to train")
+        c.copy(topics = Some(x)) } text("number of topics to train")
+    )
+
+    cmd("prune_mallet") action { (_, c) =>
+      c.copy(mode = MalletPrune)
+    } text ("prune a Mallet instance file") children(
+      opt[File]('i', "input") required() valueName("<file>") action { (x, c) =>
+        c.copy(in = x) } validate { x => if (x.exists() && x.isFile()) success else failure("Input file must exist") }
+        text("a Mallet instances file"),
+      opt[Int]('m', "min-doc-freq") valueName("[number]") action { (x, c) =>
+        c.copy(minDocFreq = Some(x)) } text("tokens must appear in at least this number of docs"),
+      opt[Int]('w', "num-words") valueName("[number]") action { (x, c) =>
+        c.copy(numberOfWords = Some(x)) } text("desired size of vocab")
     )
 
     cmd("to_mallet") action { (_, c) =>
@@ -215,7 +230,9 @@ object SusurrantUtils {
     parser.parse(args, Config()).fold() { conf =>
       conf.mode match {
         case MalletLDA =>
-          MalletUtil.train(Some(conf.in), Some(Map("num-topics" -> conf.topics.toString)))
+          MalletUtil.train(conf.in, Some(Map("num-topics" -> conf.topics.get.toString)))
+        case MalletPrune =>
+          MalletUtil.prune(conf.in.toString, conf.numberOfWords.get, conf.minDocFreq.get)
         case TokensToMalletText =>
           MalletUtil.toMalletText(conf.in.toString, conf.text.map(_.toString), conf.out.toString)
         case TokensToMallet =>

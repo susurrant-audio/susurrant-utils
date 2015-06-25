@@ -7,6 +7,7 @@ import cc.mallet.topics.tui.TopicTrainer
 import JavaIO._
 import java.io.File
 import java.util.ArrayList
+import org.chrisjr.topic_annotator.corpora
 import scala.collection.JavaConversions._
 
 object MalletUtil {
@@ -125,8 +126,8 @@ object MalletUtil {
     writeMalletText(txtFile, instanceIterator.toIterable)
   }
   
-  def defaultOpts(malletDir: File, topics: Int = 100) = Map(
-    "input" -> new File(malletDir, "instances.mallet").toString(),
+  def defaultOpts(inputFile: File, malletDir: File, topics: Int = 100) = Map(
+    "input" -> inputFile.toString(),
     "num-topics" -> topics.toString,
     "num-iterations" -> 1000.toString,
     "num-threads" -> 4.toString,
@@ -142,9 +143,15 @@ object MalletUtil {
     "diagnostics-file" -> new File(malletDir, "diagnostics-file.txt").toString,
     "xml-topic-phrase-report" -> new File(malletDir, "topic-phrases.xml").toString)
 
-  def train(inputDirMaybe: Option[File] = None, maybeOpts: Option[LdaOpts] = None): Unit = {
-    val inputDir = inputDirMaybe.getOrElse(new File("../mallet")).getAbsoluteFile
-    val defaults = defaultOpts(inputDir)
+  def prune(input: String, topWords: Int, minDocFreq: Int): String = {
+      val pruned = input.replaceAll("\\.mallet$", "_pruned.mallet")
+      MalletTfIdfPruner.prune(input, pruned, topWords, minDocFreq)
+      pruned
+  }
+
+  def train(inputFile: File, maybeOpts: Option[LdaOpts] = None): Unit = {
+    val inputDir = inputFile.getParentFile
+    val defaults = defaultOpts(inputFile, inputDir)
     val opts = defaults ++ maybeOpts.getOrElse(Map())
     TopicTrainer.main(toArgs(opts))
   }

@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "7.1.1",
   "org.apache.spark" %% "spark-core" % "1.2.1"  % "provided",
   "org.apache.spark" %% "spark-mllib" % "1.2.1" % "provided",
+  "org.chrisjr" % "topic-annotator" % "0.1.1",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test" withSources() withJavadoc()
 )
 

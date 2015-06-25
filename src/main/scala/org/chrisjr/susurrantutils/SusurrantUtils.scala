@@ -215,7 +215,7 @@ object SusurrantUtils {
     parser.parse(args, Config()).fold() { conf =>
       conf.mode match {
         case MalletLDA =>
-          MalletUtil.train(Some(conf.out), Some(Map("num-topics" -> conf.topics.toString)))
+          MalletUtil.train(Some(conf.in), Some(Map("num-topics" -> conf.topics.toString)))
         case TokensToMalletText =>
           MalletUtil.toMalletText(conf.in.toString, conf.text.map(_.toString), conf.out.toString)
         case TokensToMallet =>

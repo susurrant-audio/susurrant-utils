@@ -27,4 +27,3 @@ resolvers += Resolver.mavenLocal
 run in Compile <<= Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run)) 
 
 initialCommands := "import org.chrisjr.susurrantutils._"
-

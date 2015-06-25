@@ -43,7 +43,7 @@ object Tokens {
     for ((track, tokens) <- trackIterator) {
       val track_id = track.split('.')(0)
       val out = new FileOutputStream(
-        new File(outDir, s"$track.json"))
+        new File(outDir, s"$track_id.json"))
       JacksMapper.writeValue(out, tokens.toSeq)
     }
 
